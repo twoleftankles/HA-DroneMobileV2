@@ -5,7 +5,7 @@
  * - HA theme-aware styling
  */
 
-const CARD_VERSION = '1.6.0';
+const CARD_VERSION = '1.6.1';
 
 const VEHICLE_ICONS = [
   { value: 'mdi:car-connected',   label: 'Connected Car (default)' },
@@ -413,13 +413,14 @@ class DroneMobileV2Card extends HTMLElement {
         .chip-grid-2 { grid-template-columns: repeat(2, 1fr); }
         .chip-grid-1 { grid-template-columns: 1fr; }
         .status-chip {
-          display: flex; flex-direction: column; align-items: center; gap: 4px;
-          padding: 10px 6px; border-radius: 10px;
+          display: flex; flex-direction: column; align-items: center; gap: 3px;
+          padding: 8px 4px; border-radius: 10px;
           background: var(--secondary-background-color);
+          min-width: 0;
         }
-        .status-chip ha-icon { --mdc-icon-size: 20px; }
-        .chip-label { font-size: 0.65em; color: var(--secondary-text-color); }
-        .chip-value { font-size: 0.8em; font-weight: 600; }
+        .status-chip ha-icon { --mdc-icon-size: 18px; }
+        .chip-label { font-size: 0.6em; color: var(--secondary-text-color); text-align: center; }
+        .chip-value { font-size: 0.75em; font-weight: 600; text-align: center; }
 
         /* Telemetry */
         .tele-row { display: flex; justify-content: space-around; padding: 12px 8px; flex-wrap: wrap; gap: 8px; }
@@ -606,7 +607,9 @@ class DroneMobileV2Card extends HTMLElement {
         { key: 'towing',   icon: 'mdi:tow-truck',    label: 'Towing',       id: 'val-tow' },
       ].filter(c => on('status', c.key));
 
-      chipGrid.className = `chip-grid chip-grid-${chips.length <= 2 ? chips.length : chips.length <= 4 ? 2 : 3}`;
+      // 1→1col, 2→2col, 3→3col, 4→2col(2×2), 5-6→3col
+      const chipCols = chips.length <= 2 ? chips.length : chips.length === 3 ? 3 : chips.length <= 4 ? 2 : 3;
+      chipGrid.className = `chip-grid chip-grid-${chipCols}`;
       chipGrid.innerHTML = chips.map(c => `
         <div class="status-chip">
           <ha-icon icon="${c.icon}"></ha-icon>
@@ -695,7 +698,8 @@ class DroneMobileV2Card extends HTMLElement {
         { key: 'panic_btn',    icon: 'mdi:alarm-light',        label: 'Panic',    color: 'var(--warning-color)', id: 'btn-panic' },
       ].filter(b => on('controls', b.key));
 
-      ctrlGrid.className = `ctrl-grid ctrl-grid-${btns.length <= 2 ? btns.length : btns.length <= 4 ? 2 : 3}`;
+      const ctrlCols = btns.length <= 2 ? btns.length : btns.length === 3 ? 3 : btns.length <= 4 ? 2 : 3;
+      ctrlGrid.className = `ctrl-grid ctrl-grid-${ctrlCols}`;
       ctrlGrid.innerHTML = btns.map(b => `
         <button class="ctrl-btn" id="${b.id}">
           <ha-icon icon="${b.icon}" style="${b.color ? `color:${b.color}` : ''}"></ha-icon>
@@ -887,8 +891,22 @@ class DroneMobileV2Card extends HTMLElement {
     }
   }
 
+  // Returns the Leaflet namespace, loading from CDN if HA didn't expose window.L
+  _getLeaflet() {
+    if (this._leafletP) return this._leafletP;
+    this._leafletP = new Promise(resolve => {
+      if (window.L) { resolve(window.L); return; }
+      const s = document.createElement('script');
+      s.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+      s.onload = () => resolve(window.L);
+      s.onerror  = () => resolve(null);
+      document.head.appendChild(s);
+    });
+    return this._leafletP;
+  }
+
   async _setupMapMarker(wrap) {
-    // Poll until ha-map exposes its Leaflet map instance (up to ~10 s)
+    // Poll until ha-map exposes its internal Leaflet map (up to ~10 s)
     let lMap;
     for (let i = 0; i < 40; i++) {
       await new Promise(res => setTimeout(res, 250));
@@ -897,17 +915,16 @@ class DroneMobileV2Card extends HTMLElement {
     }
     if (!lMap) return;
 
-    // HA loads Leaflet when ha-map initialises; it sets window.L on many builds.
-    const L = window.L;
-    if (!L) return; // Can't create markers without L — map tiles still show
+    // Get Leaflet — try window.L first, fall back to CDN
+    const L = await this._getLeaflet();
+    if (!L) return;
 
-    // Suppress ha-map's built-in "FL" entity marker via its Shadow DOM
+    // Suppress ha-map's default "FL" entity badge via its Shadow DOM
     const shadow = wrap._haMap?.shadowRoot;
     if (shadow && !shadow.querySelector('#dm-v-style')) {
       const s = document.createElement('style');
       s.id = 'dm-v-style';
-      // Hide all ha-entity-marker elements rendered by ha-map
-      s.textContent = 'ha-entity-marker { display: none !important; }';
+      s.textContent = 'ha-entity-marker { display:none!important; }';
       shadow.appendChild(s);
     }
 
@@ -917,22 +934,19 @@ class DroneMobileV2Card extends HTMLElement {
     const lon = tracker?.attributes?.longitude;
     if (!lat || !lon) return;
 
-    // Build a DivIcon using ha-icon (custom element — works inside Shadow DOM)
     const vehicleIcon = this._config.vehicle_icon || 'mdi:car-connected';
     const divIcon = L.divIcon({
       html: `<div style="width:36px;height:36px;border-radius:50%;
                background:var(--primary-color,#03a9f4);
                display:flex;align-items:center;justify-content:center;
-               border:2.5px solid #fff;
-               box-shadow:0 2px 10px rgba(0,0,0,0.45);
-               box-sizing:border-box;">
+               border:2.5px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.45);
+               box-sizing:border-box">
                <ha-icon icon="${vehicleIcon}"
-                 style="--mdc-icon-size:18px;color:#fff;display:block;">
-               </ha-icon>
-             </div>`,
+                 style="--mdc-icon-size:18px;color:#fff;display:block">
+               </ha-icon></div>`,
       iconSize:   [36, 36],
       iconAnchor: [18, 18],
-      className:  '',           // no default leaflet class
+      className:  '',
     });
 
     wrap._customMarker = L.marker([lat, lon], {
