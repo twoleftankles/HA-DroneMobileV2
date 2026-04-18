@@ -5,7 +5,7 @@
  * - HA theme-aware styling
  */
 
-const CARD_VERSION = '1.4.0';
+const CARD_VERSION = '1.4.1';
 
 // All configurable items grouped by section
 const CARD_ITEMS = {
@@ -227,6 +227,12 @@ class DroneMobileV2CardEditor extends HTMLElement {
     this.querySelector('#sw-show_map').addEventListener('change', e => this._set('show_map', e.target.checked));
     this.querySelector('#inp-map_zoom').addEventListener('change', e => this._set('map_zoom', parseInt(e.target.value, 10) || 14));
 
+    // If no vehicle is saved yet but one was auto-selected in the dropdown, persist it now
+    const detected = this._detectedVehicles || [];
+    if (!this._config.vehicle && detected.length > 0) {
+      this._set('vehicle', detected[0]);
+    }
+
     this.querySelectorAll('ha-switch[data-section]').forEach(sw => {
       sw.addEventListener('change', e => {
         const cfgKey = `${e.target.dataset.section}_${e.target.dataset.item}`;
@@ -272,7 +278,6 @@ class DroneMobileV2Card extends HTMLElement {
   }
 
   setConfig(config) {
-    if (!config.vehicle) throw new Error('DroneMobile V2 card requires a "vehicle" key');
     const changed = JSON.stringify(config) !== JSON.stringify(this._config);
     this._config = config;
     if (changed) { this._rendered = false; this._render(); }
@@ -302,6 +307,16 @@ class DroneMobileV2Card extends HTMLElement {
   _render() {
     if (!this._config) return;
     this._rendered = true;
+
+    if (!this._config.vehicle) {
+      this.shadowRoot.innerHTML = `
+        <ha-card style="padding:20px;display:flex;align-items:center;gap:12px;color:var(--secondary-text-color)">
+          <ha-icon icon="mdi:car-connected" style="--mdc-icon-size:28px;color:var(--primary-color)"></ha-icon>
+          <span>Select a vehicle in the card editor to get started.</span>
+        </ha-card>`;
+      return;
+    }
+
     const on = (s, i) => this._on(s, i);
     const showMap = this._config.show_map !== false;
 
