@@ -5,7 +5,7 @@
  * - HA theme-aware styling
  */
 
-const CARD_VERSION = '1.3.0';
+const CARD_VERSION = '1.4.0';
 
 // All configurable items grouped by section
 const CARD_ITEMS = {
@@ -140,13 +140,10 @@ class DroneMobileV2CardEditor extends HTMLElement {
         <input class="field-input" id="inp-vehicle" type="text" placeholder="e.g. f_250" value="${this._config.vehicle || ''}">
         <div class="field-hint">Slug in your entity IDs, e.g. sensor.<strong>f_250</strong>_engine_status</div>`;
     }
-    const current = this._config.vehicle || '';
-    const hasCustom = current && !vehicles.includes(current);
+    const current = this._config.vehicle || vehicles[0];
     return `
       <select class="field-input" id="inp-vehicle">
-        <option value="" ${!current ? 'selected' : ''}>— select vehicle —</option>
         ${vehicles.map(v => `<option value="${v}" ${current === v ? 'selected' : ''}>${v.replace(/_/g, ' ')}</option>`).join('')}
-        ${hasCustom ? `<option value="${current}" selected>${current} (custom)</option>` : ''}
       </select>
       <div class="field-hint">Auto-detected from your DroneMobile V2 integration</div>`;
   }
@@ -199,6 +196,12 @@ class DroneMobileV2CardEditor extends HTMLElement {
           <span class="map-toggle-label">Show Mini Map</span>
           <ha-switch id="sw-show_map" ${this._get('show_map', true) ? 'checked' : ''}></ha-switch>
         </div>
+        <div>
+          <div class="field-label">Map Zoom Level</div>
+          <input class="field-input" id="inp-map_zoom" type="number" min="1" max="20" step="1"
+            value="${this._get('map_zoom', 14)}" style="width:80px;">
+          <div class="field-hint">1 = world, 14 = street (default), 18 = building</div>
+        </div>
 
         ${Object.entries(CARD_ITEMS).map(([sKey, section]) => `
           <div class="section-block">
@@ -222,6 +225,7 @@ class DroneMobileV2CardEditor extends HTMLElement {
     this.querySelector('#inp-vehicle').addEventListener('change', e => this._set('vehicle', e.target.value.trim()));
     this.querySelector('#inp-name').addEventListener('change',    e => this._set('name', e.target.value.trim()));
     this.querySelector('#sw-show_map').addEventListener('change', e => this._set('show_map', e.target.checked));
+    this.querySelector('#inp-map_zoom').addEventListener('change', e => this._set('map_zoom', parseInt(e.target.value, 10) || 14));
 
     this.querySelectorAll('ha-switch[data-section]').forEach(sw => {
       sw.addEventListener('change', e => {
@@ -264,7 +268,7 @@ class DroneMobileV2Card extends HTMLElement {
   }
 
   static getStubConfig() {
-    return { vehicle: 'your_vehicle', name: 'My Vehicle', show_map: true };
+    return { vehicle: '', name: 'My Vehicle', show_map: true, map_zoom: 14 };
   }
 
   setConfig(config) {
@@ -325,15 +329,22 @@ class DroneMobileV2Card extends HTMLElement {
         /* Header */
         .header {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 14px 18px 12px;
-          background: var(--primary-color);
-          color: #fff;
+          padding: 16px 18px 14px;
+          background: var(--ha-card-background, var(--card-background-color));
+          border-bottom: 1px solid var(--divider-color);
         }
-        .header-left { display: flex; align-items: center; gap: 10px; }
-        .header-icon { --mdc-icon-size: 28px; color: rgba(255,255,255,0.9); }
-        .vehicle-name { font-size: 1.15em; font-weight: 700; }
-        .vehicle-sub  { font-size: 0.72em; opacity: 0.75; margin-top: 1px; }
-        .last-update  { font-size: 0.7em; opacity: 0.7; text-align: right; line-height: 1.4; }
+        .header-left { display: flex; align-items: center; gap: 12px; }
+        .header-icon-wrap {
+          display: flex; align-items: center; justify-content: center;
+          width: 40px; height: 40px; border-radius: 10px;
+          background: var(--secondary-background-color);
+          border: 1px solid var(--divider-color);
+          flex-shrink: 0;
+        }
+        .header-icon { --mdc-icon-size: 22px; color: var(--primary-color); }
+        .vehicle-name { font-size: 1.05em; font-weight: 700; color: var(--primary-text-color); }
+        .vehicle-sub  { font-size: 0.7em; color: var(--secondary-text-color); margin-top: 2px; }
+        .last-update  { font-size: 0.68em; color: var(--secondary-text-color); text-align: right; line-height: 1.5; }
 
         /* Mini map iframe wrapper */
         .map-wrap {
@@ -455,7 +466,9 @@ class DroneMobileV2Card extends HTMLElement {
         <!-- Header -->
         <div class="header">
           <div class="header-left">
-            <ha-icon class="header-icon" icon="mdi:car-connected"></ha-icon>
+            <div class="header-icon-wrap">
+              <ha-icon class="header-icon" icon="mdi:car-connected"></ha-icon>
+            </div>
             <div>
               <div class="vehicle-name">${this._config.name || this._config.vehicle}</div>
               <div class="vehicle-sub">DroneMobile V2</div>
@@ -761,7 +774,7 @@ class DroneMobileV2Card extends HTMLElement {
       const haMap = document.createElement('ha-map');
       haMap.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
       haMap.interactiveZones = false;
-      haMap.zoom = 14;
+      haMap.zoom = this._config.map_zoom ?? 14;
       wrap.appendChild(haMap);
       wrap._haMap = haMap;
     }
