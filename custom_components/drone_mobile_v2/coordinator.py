@@ -185,10 +185,8 @@ class DroneMobileCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             return False
 
     async def async_lock(self) -> bool:
-        if not self.force_command:
-            if ctrl(self.data or {}).get("armed") is True:
-                _LOGGER.debug("Vehicle already armed; skipping")
-                return True
+        # Always send lock regardless of current state — allows horn-beep automations
+        # (e.g. Frigate person detection) to arm/beep even when already armed.
         return await self.async_send_command(CMD_LOCK)
 
     async def async_unlock(self) -> bool:
