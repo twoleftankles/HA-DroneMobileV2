@@ -113,10 +113,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         api.clear_tokens()
         _LOGGER.info("DroneMobile tokens cleared")
 
+    async def handle_send_lock(call: ServiceCall) -> None:
+        """Send lock/arm command unconditionally to all vehicles."""
+        for coord in coordinators.values():
+            await coord.async_lock()
+
+    async def handle_send_unlock(call: ServiceCall) -> None:
+        """Send unlock/disarm command unconditionally to all vehicles."""
+        for coord in coordinators.values():
+            await coord.async_unlock()
+
     hass.services.async_register(DOMAIN, "refresh_all", handle_refresh)
     hass.services.async_register(DOMAIN, "refresh_vehicle", handle_refresh_vehicle)
     hass.services.async_register(DOMAIN, "dump_device_data", handle_dump_data)
     hass.services.async_register(DOMAIN, "clear_tokens", handle_clear_tokens)
+    hass.services.async_register(DOMAIN, "send_lock", handle_send_lock)
+    hass.services.async_register(DOMAIN, "send_unlock", handle_send_unlock)
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     return True

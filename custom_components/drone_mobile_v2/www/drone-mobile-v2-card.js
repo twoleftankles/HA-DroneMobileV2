@@ -5,7 +5,7 @@
  * - HA theme-aware styling
  */
 
-const CARD_VERSION = '1.5.0';
+const CARD_VERSION = '1.6.0';
 
 const VEHICLE_ICONS = [
   { value: 'mdi:car-connected',   label: 'Connected Car (default)' },
@@ -398,17 +398,6 @@ class DroneMobileV2Card extends HTMLElement {
           display: flex; align-items: center; justify-content: center;
           height: 100%; color: var(--secondary-text-color); font-size: 0.85em; gap: 8px;
         }
-        .map-badge {
-          position: absolute; top: 50%; left: 50%;
-          transform: translate(-50%, -50%);
-          z-index: 900; pointer-events: none;
-          background: var(--primary-color);
-          border-radius: 50%; padding: 6px;
-          border: 2px solid #fff;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
-          display: flex; align-items: center; justify-content: center;
-        }
-        .map-badge ha-icon { --mdc-icon-size: 18px; color: #fff; }
 
         /* Section */
         .section { padding: 12px 16px; }
@@ -737,10 +726,10 @@ class DroneMobileV2Card extends HTMLElement {
 
   _bindButtons() {
     const r = this.shadowRoot;
-    // Use button entities for lock/unlock — bypasses HA's lock-service state guard
-    // which silently skips the call when the entity is already locked/unlocked.
-    r.getElementById('btn-lock')?.addEventListener('click',  () => this._btn('lock'));
-    r.getElementById('btn-unlock')?.addEventListener('click',() => this._btn('unlock'));
+    // Call the custom service directly — bypasses HA's lock entity state guard
+    // which silently no-ops when the entity is already locked/unlocked.
+    r.getElementById('btn-lock')?.addEventListener('click',  () => this._hass.callService('drone_mobile_v2', 'send_lock',   {}));
+    r.getElementById('btn-unlock')?.addEventListener('click',() => this._hass.callService('drone_mobile_v2', 'send_unlock', {}));
     r.getElementById('btn-start')?.addEventListener('click', () => this._btn('remote_start'));
     r.getElementById('btn-stop')?.addEventListener('click',  () => this._btn('remote_stop'));
     r.getElementById('btn-trunk')?.addEventListener('click', () => this._btn('trunk_release'));
@@ -872,9 +861,8 @@ class DroneMobileV2Card extends HTMLElement {
 
     const tracker = this._e('device_tracker', 'location');
     if (!tracker) return;
-
-    const lat  = tracker.attributes?.latitude;
-    const lon  = tracker.attributes?.longitude;
+    const lat = tracker.attributes?.latitude;
+    const lon = tracker.attributes?.longitude;
     if (!lat || !lon) return;
 
     if (!wrap._mapBuilt) {
@@ -882,23 +870,76 @@ class DroneMobileV2Card extends HTMLElement {
       wrap.innerHTML = '';
       const haMap = document.createElement('ha-map');
       haMap.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
-      haMap.interactiveZones = false;
       haMap.zoom = this._config.map_zoom ?? 14;
       wrap.appendChild(haMap);
       wrap._haMap = haMap;
-
-      // Vehicle icon badge centered on map (map is always centered on the vehicle)
-      const badge = document.createElement('div');
-      badge.className = 'map-badge';
-      badge.innerHTML = `<ha-icon icon="${this._config.vehicle_icon || 'mdi:car-connected'}"></ha-icon>`;
-      wrap.appendChild(badge);
-      wrap._badge = badge;
+      // Async: wait for Leaflet inside ha-map to initialise, then add custom marker
+      this._setupMapMarker(wrap);
     }
 
-    if (wrap._haMap) {
-      wrap._haMap.hass = this._hass;
-      wrap._haMap.entities = [{ entity_id: this._eid('device_tracker', 'location') }];
+    wrap._haMap.hass = this._hass;
+    // Pass entity so ha-map knows where to centre; we'll suppress its visual marker below
+    wrap._haMap.entities = [{ entity_id: this._eid('device_tracker', 'location') }];
+
+    // Move our custom Leaflet marker to latest GPS position
+    if (wrap._customMarker) {
+      wrap._customMarker.setLatLng([lat, lon]);
     }
+  }
+
+  async _setupMapMarker(wrap) {
+    // Poll until ha-map exposes its Leaflet map instance (up to ~10 s)
+    let lMap;
+    for (let i = 0; i < 40; i++) {
+      await new Promise(res => setTimeout(res, 250));
+      lMap = wrap._haMap?.leafletMap ?? wrap._haMap?._leafletMap;
+      if (lMap) break;
+    }
+    if (!lMap) return;
+
+    // HA loads Leaflet when ha-map initialises; it sets window.L on many builds.
+    const L = window.L;
+    if (!L) return; // Can't create markers without L — map tiles still show
+
+    // Suppress ha-map's built-in "FL" entity marker via its Shadow DOM
+    const shadow = wrap._haMap?.shadowRoot;
+    if (shadow && !shadow.querySelector('#dm-v-style')) {
+      const s = document.createElement('style');
+      s.id = 'dm-v-style';
+      // Hide all ha-entity-marker elements rendered by ha-map
+      s.textContent = 'ha-entity-marker { display: none !important; }';
+      shadow.appendChild(s);
+    }
+
+    // Get current GPS position
+    const tracker = this._e('device_tracker', 'location');
+    const lat = tracker?.attributes?.latitude;
+    const lon = tracker?.attributes?.longitude;
+    if (!lat || !lon) return;
+
+    // Build a DivIcon using ha-icon (custom element — works inside Shadow DOM)
+    const vehicleIcon = this._config.vehicle_icon || 'mdi:car-connected';
+    const divIcon = L.divIcon({
+      html: `<div style="width:36px;height:36px;border-radius:50%;
+               background:var(--primary-color,#03a9f4);
+               display:flex;align-items:center;justify-content:center;
+               border:2.5px solid #fff;
+               box-shadow:0 2px 10px rgba(0,0,0,0.45);
+               box-sizing:border-box;">
+               <ha-icon icon="${vehicleIcon}"
+                 style="--mdc-icon-size:18px;color:#fff;display:block;">
+               </ha-icon>
+             </div>`,
+      iconSize:   [36, 36],
+      iconAnchor: [18, 18],
+      className:  '',           // no default leaflet class
+    });
+
+    wrap._customMarker = L.marker([lat, lon], {
+      icon: divIcon,
+      interactive: false,
+      zIndexOffset: 1000,
+    }).addTo(lMap);
   }
 
   _updateDiag() {
