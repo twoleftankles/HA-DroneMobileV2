@@ -25,6 +25,18 @@ class DroneMobileButtonDescription(ButtonEntityDescription):
 
 BUTTON_DESCRIPTIONS: list[DroneMobileButtonDescription] = [
     DroneMobileButtonDescription(
+        key="lock",
+        name="Lock",
+        icon="mdi:lock",
+        press_fn=lambda c: c.async_lock(),
+    ),
+    DroneMobileButtonDescription(
+        key="unlock",
+        name="Unlock",
+        icon="mdi:lock-open-variant",
+        press_fn=lambda c: c.async_unlock(),
+    ),
+    DroneMobileButtonDescription(
         key="remote_start",
         name="Remote Start",
         icon="mdi:car-key",

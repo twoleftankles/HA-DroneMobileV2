@@ -5,7 +5,25 @@
  * - HA theme-aware styling
  */
 
-const CARD_VERSION = '1.4.1';
+const CARD_VERSION = '1.5.0';
+
+const VEHICLE_ICONS = [
+  { value: 'mdi:car-connected',   label: 'Connected Car (default)' },
+  { value: 'mdi:car',             label: 'Car' },
+  { value: 'mdi:car-sports',      label: 'Sports Car' },
+  { value: 'mdi:car-estate',      label: 'Estate / Wagon' },
+  { value: 'mdi:car-pickup',      label: 'Pickup Truck' },
+  { value: 'mdi:truck',           label: 'Truck' },
+  { value: 'mdi:truck-pickup',    label: 'Truck (Pickup)' },
+  { value: 'mdi:van-utility',     label: 'Van / Utility' },
+  { value: 'mdi:bus',             label: 'Bus' },
+  { value: 'mdi:motorcycle',      label: 'Motorcycle' },
+  { value: 'mdi:rv-truck',        label: 'RV / Motorhome' },
+  { value: 'mdi:tractor',         label: 'Tractor' },
+  { value: 'mdi:ambulance',       label: 'Ambulance' },
+  { value: 'mdi:police-badge',    label: 'Police' },
+  { value: 'mdi:fire-truck',      label: 'Fire Truck' },
+];
 
 // All configurable items grouped by section
 const CARD_ITEMS = {
@@ -202,6 +220,12 @@ class DroneMobileV2CardEditor extends HTMLElement {
             value="${this._get('map_zoom', 14)}" style="width:80px;">
           <div class="field-hint">1 = world, 14 = street (default), 18 = building</div>
         </div>
+        <div>
+          <div class="field-label">Map Vehicle Icon</div>
+          <select class="field-input" id="inp-vehicle_icon">
+            ${VEHICLE_ICONS.map(i => `<option value="${i.value}" ${this._get('vehicle_icon', 'mdi:car-connected') === i.value ? 'selected' : ''}>${i.label}</option>`).join('')}
+          </select>
+        </div>
 
         ${Object.entries(CARD_ITEMS).map(([sKey, section]) => `
           <div class="section-block">
@@ -226,6 +250,7 @@ class DroneMobileV2CardEditor extends HTMLElement {
     this.querySelector('#inp-name').addEventListener('change',    e => this._set('name', e.target.value.trim()));
     this.querySelector('#sw-show_map').addEventListener('change', e => this._set('show_map', e.target.checked));
     this.querySelector('#inp-map_zoom').addEventListener('change', e => this._set('map_zoom', parseInt(e.target.value, 10) || 14));
+    this.querySelector('#inp-vehicle_icon').addEventListener('change', e => this._set('vehicle_icon', e.target.value));
 
     // If no vehicle is saved yet but one was auto-selected in the dropdown, persist it now
     const detected = this._detectedVehicles || [];
@@ -274,7 +299,7 @@ class DroneMobileV2Card extends HTMLElement {
   }
 
   static getStubConfig() {
-    return { vehicle: '', name: 'My Vehicle', show_map: true, map_zoom: 14 };
+    return { vehicle: '', name: 'My Vehicle', show_map: true, map_zoom: 14, vehicle_icon: 'mdi:car-connected' };
   }
 
   setConfig(config) {
@@ -373,6 +398,17 @@ class DroneMobileV2Card extends HTMLElement {
           display: flex; align-items: center; justify-content: center;
           height: 100%; color: var(--secondary-text-color); font-size: 0.85em; gap: 8px;
         }
+        .map-badge {
+          position: absolute; top: 50%; left: 50%;
+          transform: translate(-50%, -50%);
+          z-index: 900; pointer-events: none;
+          background: var(--primary-color);
+          border-radius: 50%; padding: 6px;
+          border: 2px solid #fff;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .map-badge ha-icon { --mdc-icon-size: 18px; color: #fff; }
 
         /* Section */
         .section { padding: 12px 16px; }
@@ -403,17 +439,19 @@ class DroneMobileV2Card extends HTMLElement {
         .tele-label { font-size: 0.62em; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.05em; }
 
         /* Battery */
-        .battery-row {
-          display: flex; align-items: center; gap: 10px; padding: 10px 12px;
-          background: var(--secondary-background-color); border-radius: 10px; margin-bottom: 6px;
+        .battery-card {
+          padding: 12px 14px; border-radius: 10px;
+          background: var(--secondary-background-color); margin-bottom: 6px;
         }
-        .battery-row:last-child { margin-bottom: 0; }
-        .battery-row ha-icon { --mdc-icon-size: 20px; flex-shrink: 0; }
-        .battery-info { flex: 1; }
-        .battery-lbl  { font-size: 0.7em; color: var(--secondary-text-color); }
-        .battery-val  { font-size: 0.92em; font-weight: 700; }
-        .bar-wrap { flex: 2; height: 7px; background: var(--divider-color); border-radius: 4px; overflow: hidden; }
-        .bar      { height: 100%; border-radius: 4px; transition: width 0.4s ease; background: var(--success-color); }
+        .battery-card:last-child { margin-bottom: 0; }
+        .battery-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+        .battery-header ha-icon { --mdc-icon-size: 22px; flex-shrink: 0; }
+        .battery-meta { flex: 1; }
+        .battery-lbl    { font-size: 0.68em; color: var(--secondary-text-color); text-transform: uppercase; letter-spacing: 0.05em; }
+        .battery-status { font-size: 0.78em; font-weight: 600; margin-top: 1px; }
+        .battery-voltage { font-size: 1.2em; font-weight: 700; font-variant-numeric: tabular-nums; }
+        .bar-wrap { height: 6px; background: var(--divider-color); border-radius: 3px; overflow: hidden; }
+        .bar { height: 100%; border-radius: 3px; transition: width 0.5s ease, background 0.5s ease; }
 
         /* Doors */
         .door-row { display: grid; gap: 8px; }
@@ -611,8 +649,30 @@ class DroneMobileV2Card extends HTMLElement {
     const batSec = r.getElementById('battery-section');
     if (batSec) {
       let html = '';
-      if (on('battery', 'main_battery'))   html += `<div class="battery-row"><ha-icon icon="mdi:car-battery" style="color:var(--success-color)"></ha-icon><div class="battery-info"><div class="battery-lbl">Main Battery</div><div class="battery-val" id="val-battery">—</div></div><div class="bar-wrap"><div class="bar" id="bar-main"></div></div></div>`;
-      if (on('battery', 'backup_battery')) html += `<div class="battery-row"><ha-icon icon="mdi:battery-heart" style="color:var(--info-color,#2196F3)"></ha-icon><div class="battery-info"><div class="battery-lbl">Backup Battery</div><div class="battery-val" id="val-backup">—</div></div><div class="bar-wrap"><div class="bar" id="bar-backup" style="background:var(--info-color,#2196F3)"></div></div></div>`;
+      if (on('battery', 'main_battery'))   html += `
+        <div class="battery-card">
+          <div class="battery-header">
+            <ha-icon icon="mdi:car-battery" id="icon-bat-main"></ha-icon>
+            <div class="battery-meta">
+              <div class="battery-lbl">Main Battery</div>
+              <div class="battery-status" id="bat-main-status">—</div>
+            </div>
+            <div class="battery-voltage" id="val-battery">—</div>
+          </div>
+          <div class="bar-wrap"><div class="bar" id="bar-main" style="width:0%"></div></div>
+        </div>`;
+      if (on('battery', 'backup_battery')) html += `
+        <div class="battery-card">
+          <div class="battery-header">
+            <ha-icon icon="mdi:battery-heart" id="icon-bat-backup" style="color:var(--info-color,#2196F3)"></ha-icon>
+            <div class="battery-meta">
+              <div class="battery-lbl">Backup Battery</div>
+              <div class="battery-status" id="bat-backup-status">—</div>
+            </div>
+            <div class="battery-voltage" id="val-backup">—</div>
+          </div>
+          <div class="bar-wrap"><div class="bar" id="bar-backup" style="width:0%;background:var(--info-color,#2196F3)"></div></div>
+        </div>`;
       batSec.innerHTML = html;
     }
 
@@ -677,14 +737,42 @@ class DroneMobileV2Card extends HTMLElement {
 
   _bindButtons() {
     const r = this.shadowRoot;
-    r.getElementById('btn-lock')?.addEventListener('click',  () => this._svc('lock', 'lock',   this._eid('lock', 'door_lock')));
-    r.getElementById('btn-unlock')?.addEventListener('click',() => this._svc('lock', 'unlock', this._eid('lock', 'door_lock')));
+    // Use button entities for lock/unlock — bypasses HA's lock-service state guard
+    // which silently skips the call when the entity is already locked/unlocked.
+    r.getElementById('btn-lock')?.addEventListener('click',  () => this._btn('lock'));
+    r.getElementById('btn-unlock')?.addEventListener('click',() => this._btn('unlock'));
     r.getElementById('btn-start')?.addEventListener('click', () => this._btn('remote_start'));
     r.getElementById('btn-stop')?.addEventListener('click',  () => this._btn('remote_stop'));
     r.getElementById('btn-trunk')?.addEventListener('click', () => this._btn('trunk_release'));
     r.getElementById('btn-aux1')?.addEventListener('click',  () => this._btn('aux_1'));
     r.getElementById('btn-aux2')?.addEventListener('click',  () => this._btn('aux_2'));
     r.getElementById('btn-panic')?.addEventListener('click', () => this._btn('panic'));
+  }
+
+  // ── Battery helpers ────────────────────────────────────────────────────────
+
+  _batteryPct(v) {
+    // Non-linear mapping so 12.4 V looks like ~75% (healthy, not low)
+    if (v >= 13.0) return 100;                                              // charging
+    if (v >= 12.6) return 75 + ((v - 12.6) / 0.4) * 25;                   // 12.6→75% … 13.0→100%
+    if (v >= 12.0) return 30 + ((v - 12.0) / 0.6) * 45;                   // 12.0→30% … 12.6→75%
+    if (v >= 11.0) return Math.max(0, ((v - 11.0) / 1.0) * 30);           // 11.0→0%  … 12.0→30%
+    return 0;
+  }
+
+  _batteryColor(v) {
+    if (v >= 13.0) return 'var(--info-color, #2196F3)';    // charging
+    if (v >= 12.4) return 'var(--success-color, #4CAF50)'; // good
+    if (v >= 11.9) return 'var(--warning-color, #FF9800)'; // low
+    return 'var(--error-color, #F44336)';                   // critical
+  }
+
+  _batteryStatus(v) {
+    if (v >= 13.0) return 'Charging';
+    if (v >= 12.4) return 'Good';
+    if (v >= 11.9) return 'Low';
+    if (v >= 11.2) return 'Critical';
+    return 'Dead';
   }
 
   // ── Live update ────────────────────────────────────────────────────────────
@@ -736,21 +824,28 @@ class DroneMobileV2Card extends HTMLElement {
     if (on('battery', 'main_battery')) {
       const v = parseFloat(this._state('sensor', 'battery_voltage'));
       if (!isNaN(v)) {
+        const color  = this._batteryColor(v);
+        const status = this._batteryStatus(v);
+        const pct    = this._batteryPct(v);
         this._text('val-battery', `${v.toFixed(1)} V`);
-        const pct = Math.min(100, Math.max(0, ((v - 11.5) / 3.3) * 100));
+        this._text('bat-main-status', status);
+        const icon = r.getElementById('icon-bat-main');
+        if (icon) icon.style.color = color;
+        const statusEl = r.getElementById('bat-main-status');
+        if (statusEl) statusEl.style.color = color;
         const bar = r.getElementById('bar-main');
-        if (bar) {
-          bar.style.width = `${pct}%`;
-          bar.style.background = v < 12.0 ? 'var(--error-color)' : v < 12.4 ? 'var(--warning-color)' : 'var(--success-color)';
-        }
+        if (bar) { bar.style.width = `${pct}%`; bar.style.background = color; }
       }
     }
     if (on('battery', 'backup_battery')) {
       const v = parseFloat(this._state('sensor', 'backup_battery_voltage'));
       if (!isNaN(v)) {
         this._text('val-backup', `${v.toFixed(2)} V`);
+        const pct = Math.min(100, Math.max(0, ((v - 3.0) / 1.2) * 100));
+        const statusEl = r.getElementById('bat-backup-status');
+        if (statusEl) statusEl.textContent = v >= 3.7 ? 'Good' : v >= 3.4 ? 'Low' : 'Critical';
         const bar = r.getElementById('bar-backup');
-        if (bar) bar.style.width = `${Math.min(100, Math.max(0, ((v - 3.5) / 0.7) * 100))}%`;
+        if (bar) bar.style.width = `${pct}%`;
       }
     }
 
@@ -784,7 +879,6 @@ class DroneMobileV2Card extends HTMLElement {
 
     if (!wrap._mapBuilt) {
       wrap._mapBuilt = true;
-      // Use HA's built-in map via a ha-map web component
       wrap.innerHTML = '';
       const haMap = document.createElement('ha-map');
       haMap.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;';
@@ -792,6 +886,13 @@ class DroneMobileV2Card extends HTMLElement {
       haMap.zoom = this._config.map_zoom ?? 14;
       wrap.appendChild(haMap);
       wrap._haMap = haMap;
+
+      // Vehicle icon badge centered on map (map is always centered on the vehicle)
+      const badge = document.createElement('div');
+      badge.className = 'map-badge';
+      badge.innerHTML = `<ha-icon icon="${this._config.vehicle_icon || 'mdi:car-connected'}"></ha-icon>`;
+      wrap.appendChild(badge);
+      wrap._badge = badge;
     }
 
     if (wrap._haMap) {
