@@ -1,0 +1,27 @@
+refresh_all:
+  name: Refresh All Vehicles
+  description: Force an immediate data refresh for all DroneMobile V2 vehicles.
+
+refresh_vehicle:
+  name: Refresh Vehicle
+  description: Force an immediate data refresh for a specific vehicle.
+  fields:
+    vehicle_name:
+      name: Vehicle Name
+      description: The name of the vehicle to refresh (as configured in DroneMobile).
+      required: true
+      example: "F-250"
+      selector:
+        text:
+
+dump_device_data:
+  name: Dump Device Data
+  description: >
+    Write the raw API response for all vehicles to JSON files in your HA
+    config folder (drone_mobile_v2_<name>_dump.json). Useful for debugging.
+
+clear_tokens:
+  name: Clear Auth Tokens
+  description: >
+    Clear stored Cognito tokens, forcing a full re-authentication on the
+    next poll. Use this if you are getting persistent authentication errors.

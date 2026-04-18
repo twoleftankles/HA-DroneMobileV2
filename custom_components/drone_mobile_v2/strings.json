@@ -1,0 +1,38 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "DroneMobile V2",
+        "description": "Connect your DroneMobile / Compustar / Firstech vehicle.",
+        "data": {
+          "username": "Email",
+          "password": "Password",
+          "units": "Units",
+          "update_interval": "Poll Interval (minutes)",
+          "force_command": "Force Commands (send even if state already matches)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password.",
+      "cannot_connect": "Cannot connect to DroneMobile. Check your internet connection.",
+      "no_devices": "No vehicles found on this account.",
+      "unknown": "Unexpected error. Check the HA logs for details."
+    },
+    "abort": {
+      "already_configured": "This DroneMobile account is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "DroneMobile V2 Options",
+        "data": {
+          "units": "Units",
+          "update_interval": "Poll Interval (minutes)",
+          "force_command": "Force Commands"
+        }
+      }
+    }
+  }
+}

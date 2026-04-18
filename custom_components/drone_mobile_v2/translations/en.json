@@ -1,0 +1,42 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "DroneMobile V2",
+        "description": "Connect your DroneMobile / Compustar / Firstech vehicle.",
+        "data": {
+          "username": "Email address",
+          "password": "Password",
+          "units": "Units",
+          "update_interval": "Poll interval (minutes)",
+          "force_command": "Force commands (send even if state already matches)"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid email or password.",
+      "cannot_connect": "Cannot connect to DroneMobile. Check your internet connection.",
+      "no_devices": "No vehicles found on this account.",
+      "unknown": "Unexpected error. Check the Home Assistant logs for details."
+    },
+    "abort": {
+      "already_configured": "This DroneMobile account is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "DroneMobile V2 Options",
+        "data": {
+          "units": "Units",
+          "update_interval": "Poll interval (minutes)",
+          "force_command": "Force commands"
+        },
+        "data_description": {
+          "update_interval": "How often to poll the DroneMobile API (1–60 minutes). Lower values increase battery drain on the vehicle.",
+          "force_command": "Send commands even if the current state already matches (e.g. lock when already locked)."
+        }
+      }
+    }
+  }
+}
