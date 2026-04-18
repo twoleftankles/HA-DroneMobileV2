@@ -78,6 +78,7 @@ SENSOR_DESCRIPTIONS: list[DroneMobileSensorDescription] = [
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=1,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d, c: ctrl(d).get("main_battery_voltage"),
     ),
@@ -87,6 +88,7 @@ SENSOR_DESCRIPTIONS: list[DroneMobileSensorDescription] = [
         device_class=SensorDeviceClass.VOLTAGE,
         native_unit_of_measurement=UnitOfElectricPotential.VOLT,
         state_class=SensorStateClass.MEASUREMENT,
+        suggested_display_precision=2,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d, c: lks(d).get("backup_battery_voltage"),
     ),
@@ -109,6 +111,30 @@ SENSOR_DESCRIPTIONS: list[DroneMobileSensorDescription] = [
         state_class=SensorStateClass.MEASUREMENT,
         entity_category=EntityCategory.DIAGNOSTIC,
         value_fn=lambda d, c: lks(d).get("cellular_signal_strength"),
+    ),
+    DroneMobileSensorDescription(
+        key="engine_status",
+        name="Engine Status",
+        icon="mdi:engine",
+        value_fn=lambda d, c: "Running" if ctrl(d).get("engine_on") else "Off",
+    ),
+    DroneMobileSensorDescription(
+        key="alarm_status",
+        name="Alarm",
+        icon="mdi:shield-car",
+        value_fn=lambda d, c: "Armed" if ctrl(d).get("armed") else "Disarmed",
+    ),
+    DroneMobileSensorDescription(
+        key="remote_start_status",
+        name="Remote Start Status",
+        icon="mdi:car-key",
+        value_fn=lambda d, c: "Active" if d.get("remote_start_status") else "Off",
+    ),
+    DroneMobileSensorDescription(
+        key="maintenance_due",
+        name="Maintenance Due",
+        icon="mdi:wrench-clock",
+        value_fn=lambda d, c: "True" if d.get("service_due") else "False",
     ),
     # --- Controller info ---
     DroneMobileSensorDescription(

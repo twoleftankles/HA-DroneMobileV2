@@ -27,42 +27,27 @@ class DroneMobileBinarySensorDescription(BinarySensorEntityDescription):
 BINARY_SENSOR_DESCRIPTIONS: list[DroneMobileBinarySensorDescription] = [
     # --- Vehicle state ---
     DroneMobileBinarySensorDescription(
-        key="engine_running",
-        name="Engine Running",
-        device_class=BinarySensorDeviceClass.RUNNING,
-        icon="mdi:engine",
-        is_on_fn=lambda d: ctrl(d).get("engine_on"),
-    ),
-    DroneMobileBinarySensorDescription(
         key="ignition",
         name="Ignition",
         icon="mdi:key-variant",
         is_on_fn=lambda d: ctrl(d).get("ignition_on"),
     ),
     DroneMobileBinarySensorDescription(
-        key="armed",
-        name="Armed",
-        device_class=BinarySensorDeviceClass.LOCK,
-        icon="mdi:shield-car",
-        # LOCK device class: on = unlocked, off = locked — invert armed
-        is_on_fn=lambda d: not ctrl(d).get("armed", True),
-    ),
-    DroneMobileBinarySensorDescription(
         key="door_open",
-        name="Door Open",
+        name="Door Status",
         device_class=BinarySensorDeviceClass.DOOR,
         is_on_fn=lambda d: ctrl(d).get("door_open"),
     ),
     DroneMobileBinarySensorDescription(
         key="trunk_open",
-        name="Trunk Open",
+        name="Trunk Status",
         device_class=BinarySensorDeviceClass.OPENING,
         icon="mdi:car-back",
         is_on_fn=lambda d: ctrl(d).get("trunk_open"),
     ),
     DroneMobileBinarySensorDescription(
         key="hood_open",
-        name="Hood Open",
+        name="Hood Status",
         device_class=BinarySensorDeviceClass.OPENING,
         icon="mdi:car",
         is_on_fn=lambda d: ctrl(d).get("hood_open"),
@@ -70,16 +55,9 @@ BINARY_SENSOR_DESCRIPTIONS: list[DroneMobileBinarySensorDescription] = [
     # --- Alerts ---
     DroneMobileBinarySensorDescription(
         key="panic_status",
-        name="Panic Active",
-        device_class=BinarySensorDeviceClass.SAFETY,
+        name="Panic Status",
         icon="mdi:alarm-light",
         is_on_fn=lambda d: d.get("panic_status"),
-    ),
-    DroneMobileBinarySensorDescription(
-        key="remote_start_status",
-        name="Remote Started",
-        icon="mdi:car-key",
-        is_on_fn=lambda d: d.get("remote_start_status"),
     ),
     DroneMobileBinarySensorDescription(
         key="towing_detected",
@@ -87,13 +65,6 @@ BINARY_SENSOR_DESCRIPTIONS: list[DroneMobileBinarySensorDescription] = [
         device_class=BinarySensorDeviceClass.MOTION,
         icon="mdi:tow-truck",
         is_on_fn=lambda d: d.get("towing_detected"),
-    ),
-    DroneMobileBinarySensorDescription(
-        key="service_due",
-        name="Service Due",
-        device_class=BinarySensorDeviceClass.PROBLEM,
-        icon="mdi:wrench-clock",
-        is_on_fn=lambda d: d.get("service_due"),
     ),
     DroneMobileBinarySensorDescription(
         key="low_battery",
@@ -110,11 +81,12 @@ BINARY_SENSOR_DESCRIPTIONS: list[DroneMobileBinarySensorDescription] = [
     ),
     DroneMobileBinarySensorDescription(
         key="backup_battery_ok",
-        name="Backup Battery OK",
-        device_class=BinarySensorDeviceClass.BATTERY_CHARGING,
-        icon="mdi:battery-charging",
+        name="Backup Battery",
+        device_class=BinarySensorDeviceClass.BATTERY,
+        icon="mdi:battery-heart",
         entity_category=EntityCategory.DIAGNOSTIC,
-        is_on_fn=lambda d: (d.get("last_known_state") or {}).get("i_o_status", {}).get("backup_battery_status"),
+        # BATTERY device class: on = low, off = normal — invert so True (ok) shows as "Normal"
+        is_on_fn=lambda d: not (d.get("last_known_state") or {}).get("i_o_status", {}).get("backup_battery_status", True),
     ),
 ]
 
