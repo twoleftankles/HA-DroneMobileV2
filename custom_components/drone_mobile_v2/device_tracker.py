@@ -8,6 +8,7 @@ from homeassistant.components.device_tracker import SourceType
 from homeassistant.components.device_tracker.config_entry import TrackerEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -35,6 +36,7 @@ class DroneMobileTracker(CoordinatorEntity[DroneMobileCoordinator], TrackerEntit
     _attr_name = "Location"
     _attr_icon = "mdi:car-connected"
     _attr_source_type = SourceType.GPS
+    _attr_entity_category = None  # Override TrackerEntity default of DIAGNOSTIC so the map shows on the device page
 
     def __init__(self, coordinator: DroneMobileCoordinator) -> None:
         super().__init__(coordinator)
