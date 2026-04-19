@@ -143,19 +143,6 @@ Fill in your DroneMobile email, password, and preferences:
 
 ## Automations — Examples
 
-### Auto-lock when you leave home
-```yaml
-automation:
-  - alias: Lock car when leaving home
-    trigger:
-      - platform: zone
-        entity_id: person.your_name
-        zone: zone.home
-        event: leave
-    action:
-      - service: drone_mobile_v2.send_lock
-```
-
 ### Alert when alarm triggers
 ```yaml
 automation:
