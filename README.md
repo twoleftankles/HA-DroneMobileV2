@@ -1,59 +1,153 @@
-# DroneMobile V2 for Home Assistant
+# DroneMobile V2
 
-A feature-complete Home Assistant integration for DroneMobile / Firstech / CompuStar remote start systems. Installable via [HACS](https://hacs.xyz).
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
+[![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue)](https://www.home-assistant.io)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+A full-featured Home Assistant integration for **DroneMobile / Firstech / CompuStar** remote start and security systems. Control your vehicle, monitor telemetry, and automate your garage security — all from Home Assistant.
+
+---
 
 ## Features
 
-- **Lock / Unlock** — arm and disarm the vehicle alarm
-- **Remote Start / Stop** — start or stop the engine remotely
-- **Trunk Release, Panic, Aux 1 & 2** — one-press buttons
-- **GPS Tracking** — live device tracker with latitude/longitude
-- **Controller Settings** — toggle valet mode, siren, shock sensor, passive arming, auto door lock, drive lock, timer start, and turbo timer start
-- **Full Telemetry** — odometer, speed, GPS heading/direction, battery voltage, backup battery, temperature, cellular signal, firmware version, and more
-- **Diagnostics** — API error count, last command, last command result, last update timestamp
-- **Auto Poll Switch** — pause polling to conserve vehicle battery
-- **Remote Start Duration** — slider to configure run time (5–30 min)
-- **Climate Preset** — heat, cool, defrost, or none for the next remote start
+- **Lock / Unlock** — arm and disarm the vehicle alarm, always sends even if already locked (great for horn-beep automations)
+- **Remote Start / Stop** — start or stop the engine remotely with configurable run time and climate preset
+- **Trunk, Panic, Aux 1 & 2** — dedicated button entities for every command
+- **GPS Tracking** — live device tracker with latitude, longitude, speed, and heading
+- **Battery Monitoring** — main battery voltage with charging/good/low/critical thresholds, plus backup battery
+- **Full Telemetry** — odometer, temperature, cellular signal, carrier, firmware version, controller model
+- **Controller Settings** — toggle valet mode, siren, shock sensor, passive arming, auto door lock, drive lock, timer start, and turbo timer start via switches
+- **Diagnostics** — API error count, last command sent, last result, last update timestamp
+- **Custom Lovelace Card** — a built-in visual card with mini map, status chips, battery bars, and a visual editor
 
-## Installation via HACS
+---
 
-1. In HACS, go to **Integrations → Custom Repositories**
-2. Add this repository URL and select **Integration** as the category
-3. Search for **DroneMobile V2** and install
-4. Restart Home Assistant
-5. Go to **Settings → Devices & Services → Add Integration** and search for **DroneMobile V2**
-6. Enter your DroneMobile account email and password
+## Installation
 
-## Manual Installation
+### HACS (Recommended)
+
+1. In Home Assistant, open **HACS → Integrations**
+2. Click the **⋮** menu → **Custom repositories**
+3. Add `https://github.com/twoleftankles/HA-DroneMobileV2` as an **Integration**
+4. Search for **DroneMobile V2** and click **Download**
+5. Restart Home Assistant
+6. Go to **Settings → Devices & Services → Add Integration** and search for **DroneMobile V2**
+7. Enter your DroneMobile account email and password
+
+### Manual
 
 1. Copy the `custom_components/drone_mobile_v2` folder into your HA `config/custom_components/` directory
 2. Restart Home Assistant
-3. Add the integration via **Settings → Devices & Services**
+3. Add the integration via **Settings → Devices & Services → Add Integration**
+
+---
+
+## Lovelace Card
+
+The integration ships with a custom Lovelace card (`www/drone-mobile-v2-card.js`) that provides a visual overview of your vehicle including a mini map, status chips, battery bars, and lock/unlock/remote-start buttons.
+
+### Registering the Card
+
+After installation, copy `drone-mobile-v2-card.js` from the `www/` folder to your HA `config/www/` directory, then add it to your `configuration.yaml`:
+
+```yaml
+lovelace:
+  resources:
+    - url: /local/drone-mobile-v2-card.js
+      type: module
+```
+
+Restart Home Assistant (or reload resources), then add the card via the Lovelace UI — it appears as **DroneMobile V2** in the card picker with a full visual editor.
+
+### Card Features
+
+- Vehicle status chips (engine, alarm, ignition, remote start, panic, towing)
+- Telemetry row (speed, odometer, temperature, heading)
+- Battery bars with voltage, status label, and color thresholds
+- Door / trunk / hood status with open/closed color indicators
+- Lock and Unlock buttons (always send the command regardless of current state)
+- Remote start, stop, trunk, panic, Aux 1 & 2 control buttons
+- Controller setting switches (valet mode, siren, shock sensor, etc.)
+- Diagnostics panel
+- Mini map with configurable zoom and custom vehicle icon
+- All sections individually toggleable in the visual editor
+- Fully theme-aware — inherits your HA theme colors
+
+---
 
 ## Configuration
 
-After adding the integration, configure via the options flow:
+After adding the integration, configure it via **Settings → Devices & Services → DroneMobile V2 → Configure**:
 
 | Option | Default | Description |
 |--------|---------|-------------|
 | Update interval | 5 min | How often to poll the DroneMobile API |
-| Units | Imperial | Miles/°F or Kilometers/°C |
-| Force commands | Off | Send commands even if the current state already matches |
+| Units | Imperial | Miles / °F or Kilometers / °C |
+| Force commands | Off | Send commands even when current state already matches (not needed for lock — lock always sends by default) |
+
+---
 
 ## Entities
 
-### Controls
-| Entity | Type | Description |
-|--------|------|-------------|
-| Door Lock | Lock | Arm / disarm the alarm |
-| Remote Start | Button | Start the engine |
-| Remote Stop | Button | Stop the engine |
-| Trunk Release | Button | Open the trunk |
-| Panic | Button | Trigger the panic alarm |
-| Aux 1 / Aux 2 | Button | Auxiliary outputs |
-| Force Refresh | Button | Immediate data refresh |
+### Lock
 
-### Controller Settings (Switches)
+| Entity | Description |
+|--------|-------------|
+| Door Lock | Arm / disarm the alarm. Reports `locked` / `unlocked`. |
+
+### Buttons
+
+| Entity | Description |
+|--------|-------------|
+| Lock | Send lock/arm command — always fires regardless of current state |
+| Unlock | Send unlock/disarm command |
+| Remote Start | Start the engine |
+| Remote Stop | Stop the engine |
+| Trunk Release | Open the trunk |
+| Panic | Trigger the panic alarm |
+| Aux 1 / Aux 2 | Auxiliary outputs |
+| Force Refresh | Immediately poll the API |
+
+### Sensors
+
+| Entity | Description |
+|--------|-------------|
+| Engine Status | `Running` / `Off` |
+| Alarm | `Armed` / `Disarmed` |
+| Remote Start Status | `Active` / `Off` |
+| Maintenance Due | `True` / `False` |
+| Battery Voltage | Main battery in V (1 decimal) |
+| Backup Battery Voltage | Backup battery in V (2 decimal) |
+| Vehicle Temperature | Cabin temperature in °F / °C |
+| Odometer | Miles or kilometers |
+| Speed | MPH or KPH |
+| GPS Direction | Cardinal direction (e.g. `North`) |
+| GPS Heading | Degrees (0–360) |
+| Cellular Signal | Percentage |
+| Cellular Carrier | Carrier name |
+| Firmware Version | Controller firmware string |
+| Controller Model | Controller model string |
+| Last Update | Timestamp of last vehicle report |
+| Last Command | Most recently sent command name |
+| Last Command Result | API result for the last command |
+| API Error Count | Cumulative count of API errors |
+
+### Binary Sensors
+
+| Entity | Device Class | On State | Off State |
+|--------|-------------|----------|-----------|
+| Ignition | — | On | Off |
+| Door Status | Door | Open | Closed |
+| Trunk Status | Opening | Open | Closed |
+| Hood Status | Opening | Open | Closed |
+| Panic Status | — | Active | Off |
+| Towing Detected | Motion | Detected | Clear |
+| Low Battery | Battery | Low | Normal |
+| Battery Disconnected | Problem | Disconnected | OK |
+| Backup Battery | Battery | Low | Normal |
+
+### Switches
+
 | Entity | Description |
 |--------|-------------|
 | Valet Mode | Enable / disable valet mode |
@@ -64,18 +158,86 @@ After adding the integration, configure via the options flow:
 | Drive Lock | Enable / disable drive lock |
 | Timer Start | Enable / disable timer start |
 | Turbo Timer Start | Enable / disable turbo timer start |
+| Auto Poll | Pause automatic API polling |
 
-### Sensors
-Odometer, Speed, GPS Direction, GPS Heading, Battery Voltage, Backup Battery Voltage, Vehicle Temperature, Cellular Signal, Cellular Carrier, Firmware Version, Controller Model, Last Update, API Error Count, Last Command, Last Command Result
+### Number / Select
 
-### Binary Sensors
-Engine Running, Ignition, Armed, Door Open, Trunk Open, Hood Open, Panic Active, Remote Started, Towing Detected, Service Due, Low Battery, Battery Disconnected, Backup Battery OK
+| Entity | Description |
+|--------|-------------|
+| Remote Start Duration | Run time for the next remote start (5–30 min) |
+| Climate Preset | Heat, Cool, Defrost, or None for the next remote start |
+
+### Device Tracker
+
+| Entity | Description |
+|--------|-------------|
+| Location | Live GPS position — latitude, longitude, speed, and heading |
+
+---
+
+## Services
+
+| Service | Description |
+|---------|-------------|
+| `drone_mobile_v2.send_lock` | Send lock/arm to all vehicles unconditionally |
+| `drone_mobile_v2.send_unlock` | Send unlock/disarm to all vehicles unconditionally |
+| `drone_mobile_v2.refresh_all` | Force an immediate poll of all vehicles |
+| `drone_mobile_v2.refresh_vehicle` | Force a poll for a specific vehicle (pass `vehicle_name`) |
+| `drone_mobile_v2.dump_device_data` | Write raw API response to a JSON file in your config folder |
+| `drone_mobile_v2.clear_tokens` | Clear cached auth tokens and force re-authentication |
+
+> **Tip — Frigate horn-beep automation:** Because `send_lock` always transmits the arm signal regardless of current state, you can use it to beep your vehicle's horn when motion is detected. The vehicle will emit a confirmation beep even if it's already armed.
+
+---
+
+## Automation Examples
+
+### Lock at 11pm
+
+```yaml
+alias: Lock Vehicle at 11pm
+triggers:
+  - trigger: time
+    at: "23:00:00"
+conditions:
+  - condition: state
+    entity_id: person.your_name
+    state: home
+actions:
+  - action: drone_mobile_v2.send_lock
+mode: single
+```
+
+### Horn beep on person detection (Frigate)
+
+```yaml
+alias: Front Yard Person - Lock Vehicle
+triggers:
+  - trigger: state
+    entity_id: binary_sensor.front_person_occupancy
+    to: "on"
+conditions:
+  - condition: time
+    after: "23:00:00"
+    before: "06:00:00"
+  - condition: state
+    entity_id: person.your_name
+    state: home
+actions:
+  - action: drone_mobile_v2.send_lock
+  - delay: "00:05:00"   # rate limit — blocks re-trigger for 5 minutes
+mode: single
+max_exceeded: silent
+```
+
+---
 
 ## Notes
 
-- Controller settings are written via the official DroneMobile API endpoint (`/v1/device/{key}/features`) — the same endpoint used by the DroneMobile web app
-- This integration uses an unofficial API. DroneMobile may change it without notice
-- Tested on CompuStar CM900AS controller with HA 2026.4
+- This integration uses the unofficial DroneMobile cloud API — the same endpoints used by the DroneMobile mobile app and web portal. DroneMobile may change the API without notice.
+- Tested on a CompuStar CM900AS controller with Home Assistant 2026.4.
+- Controller settings (switches) are written via the `/v1/device/{key}/features` endpoint used by the official DroneMobile web app.
+- The Lock button entity and `send_lock` service both always transmit the command to the vehicle regardless of the current `armed` state. This is intentional and enables horn-beep use cases.
 
 ## Disclaimer
 
