@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <!-- Background -->
+  <rect width="256" height="256" rx="40" fill="#1565C0"/>
+
+  <!-- Car body -->
+  <rect x="44" y="140" width="168" height="52" rx="10" fill="#fff"/>
+
+  <!-- Car cabin/roof -->
+  <path d="M 90 140 L 108 96 Q 112 88 122 88 L 134 88 Q 144 88 148 96 L 166 140 Z"
+        fill="#fff"/>
+
+  <!-- Windshield cutout -->
+  <path d="M 98 136 L 112 100 Q 115 93 122 93 L 134 93 Q 141 93 144 100 L 158 136 Z"
+        fill="#1565C0" opacity="0.35"/>
+
+  <!-- Wheels -->
+  <circle cx="88"  cy="192" r="22" fill="#1565C0"/>
+  <circle cx="88"  cy="192" r="10" fill="#fff" opacity="0.4"/>
+  <circle cx="168" cy="192" r="22" fill="#1565C0"/>
+  <circle cx="168" cy="192" r="10" fill="#fff" opacity="0.4"/>
+
+  <!-- Wheel arches -->
+  <path d="M 56 168 Q 56 148 88 148 Q 120 148 120 168" fill="#1565C0"/>
+  <path d="M 136 168 Q 136 148 168 148 Q 200 148 200 168" fill="#1565C0"/>
+
+  <!-- Signal arcs (top-right) -->
+  <g fill="none" stroke="#fff" stroke-linecap="round">
+    <path d="M 178 74 Q 196 82 196 100" stroke-width="8"  opacity="0.5"/>
+    <path d="M 186 62 Q 212 74 212 100" stroke-width="7"  opacity="0.7"/>
+    <path d="M 194 50 Q 228 66 228 100" stroke-width="6"  opacity="0.9"/>
+  </g>
+
+  <!-- Lock badge (bottom-right) -->
+  <circle cx="200" cy="192" r="26" fill="#0D47A1"/>
+  <rect x="191" y="192" width="18" height="14" rx="3" fill="#fff"/>
+  <path d="M 193 192 Q 193 183 200 183 Q 207 183 207 192"
+        fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>
+</svg>
