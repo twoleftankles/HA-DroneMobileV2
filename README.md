@@ -2,7 +2,7 @@
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://hacs.xyz)
 [![HA Version](https://img.shields.io/badge/Home%20Assistant-2024.1%2B-blue)](https://www.home-assistant.io)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 
 A full-featured Home Assistant integration for **DroneMobile / Firstech / CompuStar** remote start and security systems. Control your vehicle, monitor telemetry, and automate your garage security — all from Home Assistant.
 
