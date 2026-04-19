@@ -4,7 +4,7 @@ A full-featured custom component for controlling and monitoring your
 **DroneMobile / Compustar / Firstech** remote start system from Home Assistant.
 
 > ⚠️ **Disclaimer:** This integration uses DroneMobile's unofficial API.
-> Anthropic / the integration authors accept no responsibility for damages
+> The integration authors accept no responsibility for damages
 > to your vehicle. Use at your own risk.
 
 ---
