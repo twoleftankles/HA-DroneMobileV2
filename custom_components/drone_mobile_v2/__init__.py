@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import json
 import logging
+from pathlib import Path
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -22,6 +23,47 @@ from .const import (
 from .coordinator import DroneMobileCoordinator
 
 _LOGGER = logging.getLogger(__name__)
+
+_CARD_URL  = "/drone_mobile_v2/drone-mobile-v2-card.js"
+_CARD_PATH = Path(__file__).parent / "www" / "drone-mobile-v2-card.js"
+
+
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
+    """Register the Lovelace card as a static path once at HA startup."""
+    try:
+        from homeassistant.components.http import StaticPathConfig
+        await hass.http.async_register_static_paths([
+            StaticPathConfig(url_path=_CARD_URL, path=str(_CARD_PATH), cache_headers=False)
+        ])
+    except Exception:
+        # Older HA builds — fall back to the deprecated API
+        try:
+            hass.http.register_static_path(_CARD_URL, str(_CARD_PATH), cache_headers=False)
+        except Exception as err:
+            _LOGGER.warning("Could not register DroneMobile V2 card static path: %s", err)
+            return True
+
+    # Auto-register with Lovelace resource storage so users don't need to touch YAML
+    hass.async_create_task(_async_register_lovelace_resource(hass))
+    return True
+
+
+async def _async_register_lovelace_resource(hass: HomeAssistant) -> None:
+    """Add the card JS to Lovelace resources if not already present."""
+    try:
+        lovelace_data = hass.data.get("lovelace")
+        if not lovelace_data:
+            return
+        resources = lovelace_data.get("resources")
+        if not resources:
+            return
+        existing = [r for r in resources.async_items() if _CARD_URL in r.get("url", "")]
+        if existing:
+            return
+        await resources.async_create_item({"res_type": "module", "url": _CARD_URL})
+        _LOGGER.info("DroneMobile V2 card registered as Lovelace resource")
+    except Exception as err:
+        _LOGGER.debug("Could not auto-register Lovelace resource: %s", err)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:

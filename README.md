@@ -48,16 +48,16 @@ The integration ships with a custom Lovelace card (`www/drone-mobile-v2-card.js`
 
 ### Registering the Card
 
-After installation, copy `drone-mobile-v2-card.js` from the `www/` folder to your HA `config/www/` directory, then add it to your `configuration.yaml`:
+The card is registered **automatically** when the integration loads — no YAML changes needed. After installing via HACS and restarting Home Assistant, the card appears as **DroneMobile V2** in the Lovelace card picker with a full visual editor.
+
+If for any reason auto-registration fails, you can register it manually by adding this to `configuration.yaml` and restarting:
 
 ```yaml
 lovelace:
   resources:
-    - url: /local/drone-mobile-v2-card.js
+    - url: /drone_mobile_v2/drone-mobile-v2-card.js
       type: module
 ```
-
-Restart Home Assistant (or reload resources), then add the card via the Lovelace UI — it appears as **DroneMobile V2** in the card picker with a full visual editor.
 
 ### Card Features
 
