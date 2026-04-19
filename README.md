@@ -230,6 +230,38 @@ mode: single
 max_exceeded: silent
 ```
 
+### Alert when alarm triggers
+```yaml
+automation:
+  - alias: Notify on car alarm
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.your_vehicle_name_panic_status
+        to: "on"
+    action:
+      - service: notify.mobile_app_your_phone
+        data:
+          title: "Car Alarm"
+          message: "Vehicle alarm has been triggered!"
+```
+
+### Remote start on cold mornings
+```yaml
+automation:
+  - alias: Start car on cold mornings
+    trigger:
+      - platform: time
+        at: "07:30:00"
+    condition:
+      - condition: numeric_state
+        entity_id: sensor.your_vehicle_name_vehicle_temperature
+        below: 35
+    action:
+      - service: button.press
+        target:
+          entity_id: button.your_vehicle_name_remote_start
+```
+
 ---
 
 ## Notes
